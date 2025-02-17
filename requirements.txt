@@ -1,5 +1,4 @@
 Flask==3.1.0
-beautifulsoup4==4.12.3
 selenium==4.27.1
 watchdog
 faster-whisper==1.1.0
