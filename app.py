@@ -21,6 +21,7 @@ import locale
 
 # global 
 downloaded = False
+startnow = False
 
 # setup selenium
 options = webdriver.ChromeOptions()
@@ -392,10 +393,10 @@ def check_recording_availability():
     stream_code = json.loads(result.content).get("code")
     default_site = f"https://stream.jw.org/ts/{stream_code}"
 
-    if datetime.datetime.now().weekday() in [0,1,5,6]:
-        if datetime.datetime.now().time() > datetime.time(12,0,0):
+    if startnow or datetime.datetime.now().weekday() in [0,1,5,6]:
+        if startnow or datetime.datetime.now().time() > datetime.time(12,0,0):
             # if it's past 12pm EST in US, on Monday, Tuesday, Saturday, Sunday
-            if not downloaded:
+            if startnow or not downloaded:
                 download_meeting(site=default_site, type='MIDWEEK MEETING')
             else:
                 print("Meeting file is already downloaded")
@@ -406,6 +407,11 @@ def check_recording_availability():
     time.sleep(3600*4) # check every 4 hours
 
 if __name__ == "__main__":
+    startnow = sys.argv[1] == '--startnow'
+    print('startnow' if startnow else 'start later')
+    if not os.path.exists('output'):
+        os.makedirs('output')
+
     # Start watchdog to wait for finished download
     watcher_thread = threading.Thread(target=run_watcher)
     watcher_thread.daemon = True
