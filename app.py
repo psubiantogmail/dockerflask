@@ -382,8 +382,10 @@ def process_file(file_name):
         os.remove(new_chapter_file)
 
         print(f"- Move to output")
-        if not os.path.exists(harta_video_file_name2):
+        if os.path.exists(harta_video_file_name2):
             shutil.move(harta_video_file_name2, "output/" + harta_video_file_name2)
+        else:
+            print(f"file not found {harta_video_file_name2}")
 
         remaining_files = [f for f in os.listdir() if f.endswith("mp4")]
         for f in remaining_files:
