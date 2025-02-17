@@ -96,9 +96,9 @@ def format_time(seconds):
     formatted_time = f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
     return formatted_time
 
-def format_current_week():
+def format_current_week(language, source):
     # format Mon-Sun dates like this : 20–26 Januari
-    locale.setlocale(locale.LC_TIME, "id_ID")
+    locale.setlocale(locale.LC_TIME, "id_ID" if language=="id" else "en_US")
     today = datetime.datetime.today()
     today_num = datetime.datetime.today().weekday()
     
@@ -112,12 +112,25 @@ def format_current_week():
 
     value = ""
     test = "Perhimpunan Tengah Pekan_ 3–9 Februari_r720P - Harta Dalam Firman Allah.mp4"
+    test_web = "February 17 – 23"
     if start_of_week_month == end_of_week_month:
-        value = start_of_week_num+"–"+end_of_week_num+" "+end_of_week_month
+        if source == "file":
+            value = start_of_week_num+"–"+end_of_week_num+" "+end_of_week_month 
+        else:
+            if language == "id":
+                value = start_of_week_num+"–"+end_of_week_num+" "+end_of_week_month 
+            else:
+                value = end_of_week_month + " " + start_of_week_num+" – "+end_of_week_num
     else:
-        value = start_of_week_num+" "+start_of_week_month+" – "+end_of_week_num+" "+end_of_week_month
+        if source == "file":
+            value = start_of_week_num+" "+start_of_week_month+" – "+end_of_week_num+" "+end_of_week_month
+        else:
+            if language == "id":
+                value = start_of_week_num+" "+start_of_week_month+" – "+end_of_week_num+" "+end_of_week_month
+            else:
+                value = start_of_week_month + " " + start_of_week_num + " – "+ end_of_week_month+" "+end_of_week_num
 
-    print(f'- current week : {value}')
+    print(f'- current week : {value}') # 17–23 Februari / February 17 – 23
     return value
 
 def format_current_week_title_id(english_title):
@@ -246,7 +259,7 @@ def download_meeting(site=None, type=None):
     if not type:
         type = "Perhimpunan Tengah Pekan"
     
-    print(f" - opening page : {site}")
+    print(f"- opening page : {site}")
     driver.get(site)
     time.sleep(5)
 
@@ -277,6 +290,7 @@ def download_meeting(site=None, type=None):
             global downloaded
             downloaded = True
             return
+        
         # also remove previous week files
         file_list = [p['file'] for p in data if not program_date_id in p['file']]
         if len(file_list) > 0:
@@ -284,8 +298,9 @@ def download_meeting(site=None, type=None):
                 print(f"- removing old file {f}")
                 os.remove("output\\"+f)
 
-        if title.text == type:
-            print(f'- found : {type}')
+        look_for_this_program_date = format_current_week("en", "web")
+        if title.text == type and program_date.text == look_for_this_program_date :
+            print(f'- found : {type} for {look_for_this_program_date}')
             button = vod.find_element(By.CSS_SELECTOR, "[data-testid='program-download-button']")
             print('- click Download button')
             button.click()
@@ -293,6 +308,8 @@ def download_meeting(site=None, type=None):
             print('- click Download 720 button')
             download_720.click()
             print('- waiting for download to complete ...')
+        else:
+            print(f'- VOD not available yet : {type} for {look_for_this_program_date}')
 
 def process_file(file_name):
     print(f"[process_file] Download Completed : {file_name}")
@@ -319,7 +336,7 @@ def process_file(file_name):
 
     # compare with the audio
     print(f'- compare with transcription from audio')
-    harta_video_file_name = f"Perhimpunan Tengah Pekan_ {format_current_week()}_r720P - Harta Dalam Firman Allah.mp4"
+    harta_video_file_name = f"Perhimpunan Tengah Pekan_ {format_current_week('id', 'file')}_r720P - Harta Dalam Firman Allah.mp4"
     if os.path.exists(harta_video_file_name):
         print(f'- attempting to extract audio {harta_video_file_name}')
         audio_file_name = extract_audio(harta_video_file_name)
@@ -403,13 +420,18 @@ def check_recording_availability():
         else:
             print("Will download after 12p")
     else:
-        print("Today is not Monday/Tuesday Saturday/Sunday")
+        print("Download is only on Monday/Tuesday Saturday/Sunday")
     time.sleep(3600*4) # check every 4 hours
 
 if __name__ == "__main__":
-    startnow = sys.argv[1] == '--startnow'
+    if len(sys.argv)>1:
+        startnow = sys.argv[1] == '--startnow'
+    else:
+        startnow = True
     print('startnow' if startnow else 'start later')
+    
     if not os.path.exists('output'):
+        print('output folder created')
         os.makedirs('output')
 
     # Start watchdog to wait for finished download
